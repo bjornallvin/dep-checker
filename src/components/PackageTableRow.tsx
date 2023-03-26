@@ -1,4 +1,4 @@
-import { getVersionDiff } from "@/analyze";
+import { getVersionDiff } from "@/utils";
 import Link from "next/link";
 
 export const PackageTableRow = ({

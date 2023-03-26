@@ -1,7 +1,5 @@
 import * as fs from "fs";
 import { ILockedPackage, IPackage, IPackageJson, IProject } from "./types";
-import { version } from "react";
-
 const { parse } = require("parse-yarn-lockfile");
 
 export let rootProject: IProject;
@@ -191,9 +189,7 @@ export const getLatestVersions = async () => {
     return;
   }
 
-  const { execSync } = require("child_process");
-
-  packages.forEach(async (p) => {
+  for (const p of packages) {
     const endpoint = `https://registry.npmjs.org/${p.name}/latest`;
     const res = await fetch(endpoint);
     const data = await res.json();
@@ -202,7 +198,7 @@ export const getLatestVersions = async () => {
       name: p.name,
       version: data.version,
     });
-  });
+  }
 };
 
 export const appendLatestVersions = () => {
@@ -221,30 +217,4 @@ export const appendLatestVersions = () => {
       latestVersion: latestVersion?.version,
     };
   });
-};
-
-export const getVersionDiff = (
-  currentVersion: string,
-  latestVersion: string
-) => {
-  const currentVersionParts = currentVersion.split(".");
-  const latestVersionParts = latestVersion.split(".");
-
-  const currentVersionMajor = parseInt(currentVersionParts[0]);
-  const latestVersionMajor = parseInt(latestVersionParts[0]);
-
-  const currentVersionMinor = parseInt(currentVersionParts[1]);
-  const latestVersionMinor = parseInt(latestVersionParts[1]);
-
-  const currentVersionPatch = parseInt(currentVersionParts[2]);
-  const latestVersionPatch = parseInt(latestVersionParts[2]);
-
-  if (currentVersionMajor !== latestVersionMajor) {
-    return "major";
-  } else if (currentVersionMinor !== latestVersionMinor) {
-    return "minor";
-  } else if (currentVersionPatch !== latestVersionPatch) {
-    return "patch";
-  }
-  return "same";
 };
