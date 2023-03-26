@@ -4,6 +4,7 @@ import { version } from "react";
 
 const { parse } = require("parse-yarn-lockfile");
 
+export let rootProject: IProject;
 export let projects: IProject[] = [];
 export let packages: IPackage[] = [];
 export let lockedPackages: ILockedPackage[] = [];
@@ -18,7 +19,7 @@ export const initialize = async (rootPath: string) => {
 };
 
 export const getProjects = async (rootPath: string) => {
-  if (projects.length > 0) {
+  if (rootProject || projects.length > 0) {
     return;
   }
   // get root package.json
@@ -26,8 +27,9 @@ export const getProjects = async (rootPath: string) => {
     fs.readFileSync(rootPath + "/package.json", "utf8")
   );
 
-  projects.push({
+  rootProject = {
     name: rootPackageJson.name,
+    path: rootPath,
     dependencies: rootPackageJson.dependencies
       ? Object.keys(rootPackageJson.dependencies)
           .map((key) => ({
@@ -42,8 +44,15 @@ export const getProjects = async (rootPath: string) => {
           version: rootPackageJson.devDependencies?.[key] || "",
         }))
       : [],
-  });
+  };
+
+  projects.push(rootProject);
+
   // get paths to all monorepo packages
+  if (!rootPackageJson.workspaces) {
+    return projects;
+  }
+
   const packagePaths = rootPackageJson.workspaces.packages;
   for (const packagePath of packagePaths) {
     if (packagePath.endsWith("*")) {
@@ -80,6 +89,7 @@ export const getProjects = async (rootPath: string) => {
         // get dependencies and devDependencies for each package
         const project: IProject = {
           name: packageJson.name,
+          path: rootPath + packagePathWithoutWildcard + packageSubPath,
           dependencies: packageJson.dependencies
             ? Object.keys(packageJson.dependencies)
                 .map((key) => ({

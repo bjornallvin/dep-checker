@@ -1,5 +1,6 @@
 export interface IProject {
   name: string;
+  path: string;
   dependencies?: IPackage[];
   devDependencies?: IPackage[];
 }
