@@ -1,91 +1,147 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from './page.module.css'
+import { lockedPackages, packages, projects, initialize } from "@/analyze";
+import { IProject, IPackage, ILockedPackage } from "@/types";
 
-const inter = Inter({ subsets: ['latin'] })
+export default async function Home() {
+  await initialize("../dpc-turbo/");
 
-export default function Home() {
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-        <div className={styles.thirteen}>
-          <Image src="/thirteen.svg" alt="13" width={40} height={31} priority />
-        </div>
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://beta.nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    <div className={"dark:bg-slate-800"}>
+      <table>
+        <thead>
+          <tr>
+            <th className={"dark:text-slate-200 font-bold text-left"}>
+              Project
+            </th>
+            <th className={"dark:text-slate-200 font-bold text-left"}>
+              Dependency
+            </th>
+            <th className={"dark:text-slate-200 font-bold text-left"}>
+              Wanted version
+            </th>
+            <th className={"dark:text-slate-200 font-bold text-left"}>
+              Resolved version
+            </th>
+            <th className={"dark:text-slate-200 font-bold text-left"}>
+              Latest version
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {projects &&
+            1 === 2 &&
+            projects.map((project, index) => (
+              <ProjectDependenciesTableRows
+                key={project.name}
+                project={project}
+                lockedPackages={lockedPackages}
+              />
+            ))}
+          {packages &&
+            packages.map((pkg, index) => (
+              <PackageProjectsTableRows
+                key={pkg.name}
+                depPackage={pkg}
+                lockedPackages={lockedPackages}
+              />
+            ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
+
+export const ProjectDependenciesTableRows = ({
+  project,
+  lockedPackages,
+}: {
+  project: IProject;
+  lockedPackages: ILockedPackage[];
+}) => {
+  return (
+    <>
+      {project.dependencies &&
+        project.dependencies.map((dep) => {
+          const resolvedVersion = lockedPackages.find(
+            (p) => p.name === dep.name && p.wantedVersion === dep.version
+          )?.resolvedVersion;
+          return (
+            <TableRow
+              key={project.name + dep.name + dep.version}
+              projectName={project.name}
+              packageName={dep.name}
+              wantedVersion={dep.version}
+              lockedVersion={resolvedVersion || "?"}
+            />
+          );
+        })}
+      {project.devDependencies &&
+        project.devDependencies.map((dep) => {
+          const resolvedVersion = lockedPackages.find(
+            (p) => p.name === dep.name && p.wantedVersion === dep.version
+          )?.resolvedVersion;
+          return (
+            <TableRow
+              key={project.name + dep.name + dep.version}
+              projectName={project.name}
+              packageName={dep.name}
+              wantedVersion={dep.version}
+              lockedVersion={resolvedVersion || "?"}
+            />
+          );
+        })}
+    </>
+  );
+};
+
+export const PackageProjectsTableRows = ({
+  depPackage,
+  lockedPackages,
+}: {
+  depPackage: IPackage;
+  lockedPackages: ILockedPackage[];
+}) => {
+  const resolvedVersion = lockedPackages.find(
+    (p) => p.name === depPackage.name && p.wantedVersion === depPackage.version
+  )?.resolvedVersion;
+  return (
+    <>
+      {depPackage.projects &&
+        depPackage.projects.map((project) => {
+          return (
+            <TableRow
+              key={project + depPackage.name + depPackage.version}
+              projectName={project}
+              packageName={depPackage.name}
+              wantedVersion={depPackage.version}
+              lockedVersion={resolvedVersion || "?"}
+              latestVersion={depPackage.latestVersion}
+            />
+          );
+        })}
+    </>
+  );
+};
+
+const TableRow = ({
+  projectName,
+  packageName,
+  wantedVersion,
+  lockedVersion,
+  latestVersion = "?",
+}: {
+  projectName: string;
+  packageName: string;
+  wantedVersion: string;
+  lockedVersion: string;
+  latestVersion?: string;
+}) => {
+  return (
+    <tr key={projectName + packageName + wantedVersion}>
+      <td className={"dark:text-slate-200 "}>{projectName}</td>
+      <td className={"dark:text-slate-200 "}>{packageName}</td>
+      <td className={"dark:text-slate-200 "}>{wantedVersion}</td>
+      <td className={"dark:text-slate-200 "}>{lockedVersion}</td>
+      <td className={"dark:text-slate-200 "}>{latestVersion}</td>
+    </tr>
+  );
+};
