@@ -181,21 +181,18 @@ export const getLatestVersions = async () => {
     return;
   }
 
-  const res = await fetch("https://api.npms.io/v2/package/mget", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(packages.map((p) => p.name)),
-    cache: "no-store",
-  });
-  const data = await res.json();
+  const { execSync } = require("child_process");
 
-  latestVersions = Object.keys(data).map((key) => ({
-    name: key,
-    version: data[key].collected.metadata.version,
-  }));
+  packages.forEach(async (p) => {
+    const endpoint = `https://registry.npmjs.org/${p.name}/latest`;
+    const res = await fetch(endpoint);
+    const data = await res.json();
+    //console.log(data);
+    latestVersions.push({
+      name: p.name,
+      version: data.version,
+    });
+  });
 };
 
 export const appendLatestVersions = () => {
@@ -214,4 +211,30 @@ export const appendLatestVersions = () => {
       latestVersion: latestVersion?.version,
     };
   });
+};
+
+export const getVersionDiff = (
+  currentVersion: string,
+  latestVersion: string
+) => {
+  const currentVersionParts = currentVersion.split(".");
+  const latestVersionParts = latestVersion.split(".");
+
+  const currentVersionMajor = parseInt(currentVersionParts[0]);
+  const latestVersionMajor = parseInt(latestVersionParts[0]);
+
+  const currentVersionMinor = parseInt(currentVersionParts[1]);
+  const latestVersionMinor = parseInt(latestVersionParts[1]);
+
+  const currentVersionPatch = parseInt(currentVersionParts[2]);
+  const latestVersionPatch = parseInt(latestVersionParts[2]);
+
+  if (currentVersionMajor !== latestVersionMajor) {
+    return "major";
+  } else if (currentVersionMinor !== latestVersionMinor) {
+    return "minor";
+  } else if (currentVersionPatch !== latestVersionPatch) {
+    return "patch";
+  }
+  return "same";
 };

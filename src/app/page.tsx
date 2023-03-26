@@ -1,52 +1,55 @@
-import { lockedPackages, packages, projects, initialize } from "@/analyze";
+import {
+  lockedPackages,
+  packages,
+  projects,
+  initialize,
+  getVersionDiff,
+} from "@/analyze";
+import { PackageTableRow } from "@/components/PackageTableRow";
 import { IProject, IPackage, ILockedPackage } from "@/types";
 
 export default async function Home() {
   await initialize("../dpc-turbo/");
 
   return (
-    <div className={"dark:bg-slate-800"}>
-      <table>
-        <thead>
-          <tr>
-            <th className={"dark:text-slate-200 font-bold text-left"}>
-              Project
-            </th>
-            <th className={"dark:text-slate-200 font-bold text-left"}>
-              Dependency
-            </th>
-            <th className={"dark:text-slate-200 font-bold text-left"}>
-              Wanted version
-            </th>
-            <th className={"dark:text-slate-200 font-bold text-left"}>
-              Resolved version
-            </th>
-            <th className={"dark:text-slate-200 font-bold text-left"}>
-              Latest version
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {projects &&
-            1 === 2 &&
-            projects.map((project, index) => (
-              <ProjectDependenciesTableRows
-                key={project.name}
-                project={project}
-                lockedPackages={lockedPackages}
-              />
-            ))}
-          {packages &&
-            packages.map((pkg, index) => (
-              <PackageProjectsTableRows
-                key={pkg.name}
-                depPackage={pkg}
-                lockedPackages={lockedPackages}
-              />
-            ))}
-        </tbody>
-      </table>
-    </div>
+    <table className="table-auto">
+      <thead>
+        <tr className="">
+          <th className={"dark:text-slate-200 font-bold text-left"}>Project</th>
+          <th className={"dark:text-slate-200 font-bold text-left"}>
+            Dependency
+          </th>
+          <th className={"dark:text-slate-200 font-bold text-left"}>
+            Wanted version
+          </th>
+          <th className={"dark:text-slate-200 font-bold text-left"}>
+            Resolved version
+          </th>
+          <th className={"dark:text-slate-200 font-bold text-left"}>
+            Latest version
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {projects &&
+          1 === 2 &&
+          projects.map((project, index) => (
+            <ProjectDependenciesTableRows
+              key={project.name}
+              project={project}
+              lockedPackages={lockedPackages}
+            />
+          ))}
+        {packages &&
+          packages.map((pkg, index) => (
+            <PackageProjectsTableRows
+              key={pkg.name}
+              depPackage={pkg}
+              lockedPackages={lockedPackages}
+            />
+          ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -65,7 +68,7 @@ export const ProjectDependenciesTableRows = ({
             (p) => p.name === dep.name && p.wantedVersion === dep.version
           )?.resolvedVersion;
           return (
-            <TableRow
+            <PackageTableRow
               key={project.name + dep.name + dep.version}
               projectName={project.name}
               packageName={dep.name}
@@ -80,7 +83,7 @@ export const ProjectDependenciesTableRows = ({
             (p) => p.name === dep.name && p.wantedVersion === dep.version
           )?.resolvedVersion;
           return (
-            <TableRow
+            <PackageTableRow
               key={project.name + dep.name + dep.version}
               projectName={project.name}
               packageName={dep.name}
@@ -108,7 +111,7 @@ export const PackageProjectsTableRows = ({
       {depPackage.projects &&
         depPackage.projects.map((project) => {
           return (
-            <TableRow
+            <PackageTableRow
               key={project + depPackage.name + depPackage.version}
               projectName={project}
               packageName={depPackage.name}
@@ -119,29 +122,5 @@ export const PackageProjectsTableRows = ({
           );
         })}
     </>
-  );
-};
-
-const TableRow = ({
-  projectName,
-  packageName,
-  wantedVersion,
-  lockedVersion,
-  latestVersion = "?",
-}: {
-  projectName: string;
-  packageName: string;
-  wantedVersion: string;
-  lockedVersion: string;
-  latestVersion?: string;
-}) => {
-  return (
-    <tr key={projectName + packageName + wantedVersion}>
-      <td className={"dark:text-slate-200 "}>{projectName}</td>
-      <td className={"dark:text-slate-200 "}>{packageName}</td>
-      <td className={"dark:text-slate-200 "}>{wantedVersion}</td>
-      <td className={"dark:text-slate-200 "}>{lockedVersion}</td>
-      <td className={"dark:text-slate-200 "}>{latestVersion}</td>
-    </tr>
   );
 };

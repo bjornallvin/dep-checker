@@ -20,7 +20,9 @@ export default function RootLayout({
           </Link>
           <Link href={"/locked"}>Locked</Link>
         </div>
-        {children}
+        <div className="w-full h-screen dark:bg-slate-800">
+          <div className={`max-w-6xl mx-auto px-8 pt-8`}>{children}</div>
+        </div>
       </body>
     </html>
   );

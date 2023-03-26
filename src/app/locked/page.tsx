@@ -1,4 +1,5 @@
 import { packages, initialize, lockedPackages } from "@/analyze";
+import { PackageTableRow } from "@/components/PackageTableRow";
 
 export default async function LockedPage() {
   await initialize("../dpc-turbo/");
@@ -30,14 +31,13 @@ export default async function LockedPage() {
                 (p) => p.name === pkg.name && p.wantedVersion === pkg.version
               )?.resolvedVersion;
               return (
-                <tr key={pkg.name}>
-                  <td className={"dark:text-slate-200 "}>{pkg.name}</td>
-                  <td className={"dark:text-slate-200 "}>{pkg.version}</td>
-                  <td className={"dark:text-slate-200 "}>{resolvedVersion}</td>
-                  <td className={"dark:text-slate-200 "}>
-                    {pkg.latestVersion}
-                  </td>
-                </tr>
+                <PackageTableRow
+                  key={pkg.name}
+                  packageName={pkg.name}
+                  wantedVersion={pkg.version}
+                  lockedVersion={resolvedVersion || "?"}
+                  latestVersion={pkg.latestVersion}
+                />
               );
             })}
         </tbody>
