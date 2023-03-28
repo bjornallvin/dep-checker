@@ -23,3 +23,10 @@ export const getVersionDiff = (
   }
   return "same";
 };
+
+export const getLatestVersion = async (packageName: string) => {
+  const endpoint = `http://localhost:3000/api?name=${packageName}`;
+  const res = await fetch(endpoint);
+  const data = await res.json();
+  return data.version;
+};

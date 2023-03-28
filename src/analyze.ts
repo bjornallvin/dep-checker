@@ -1,25 +1,71 @@
 import * as fs from "fs";
-import { ILockedPackage, IPackage, IPackageJson, IProject } from "./types";
+import {
+  ILockedPackage,
+  IPackage,
+  IPackageJson,
+  IProject,
+  IProjectPackage,
+} from "./types";
 const { parse } = require("parse-yarn-lockfile");
 
+export let rootPath = process.cwd();
 export let rootProject: IProject;
 export let projects: IProject[] = [];
-export let packages: IPackage[] = [];
-export let lockedPackages: ILockedPackage[] = [];
-export let latestVersions: IPackage[] = [];
+export let projectPackages: IProjectPackage[] = [];
 
-export const initialize = async (rootPath: string) => {
-  await getProjects(rootPath);
-  getPackages();
-  await analyzeLockFile(rootPath);
-  await getLatestVersions();
-  appendLatestVersions();
+export const initialize = async () => {
+  if (isValidProject()) {
+    await getProjects(rootPath);
+    generateProjectPackages();
+    await analyzeLockFile(rootPath);
+  }
+};
+
+export const isValidProject = () => fs.existsSync(rootPath + "/package.json");
+
+export const setRootPath = (path: string) => {
+  rootPath = path;
+  return isValidProject();
+};
+
+export const generateProjectPackages = () => {
+  if (projectPackages.length > 0) {
+    return;
+  }
+
+  for (const project of projects) {
+    if (project.dependencies) {
+      for (const dependency of project.dependencies) {
+        const projectPackage: IProjectPackage = {
+          packageName: dependency.name,
+          projectName: project.name,
+          wantedVersion: dependency.version,
+          resolvedVersion: "",
+          dependencyType: "runtime",
+        };
+        projectPackages.push(projectPackage);
+      }
+    }
+    if (project.devDependencies) {
+      for (const devDependency of project.devDependencies) {
+        const projectPackage: IProjectPackage = {
+          packageName: devDependency.name,
+          projectName: project.name,
+          wantedVersion: devDependency.version,
+          resolvedVersion: "",
+          dependencyType: "dev",
+        };
+        projectPackages.push(projectPackage);
+      }
+    }
+  }
 };
 
 export const getProjects = async (rootPath: string) => {
   if (rootProject || projects.length > 0) {
     return;
   }
+
   // get root package.json
   const rootPackageJson: IPackageJson = await JSON.parse(
     fs.readFileSync(rootPath + "/package.json", "utf8")
@@ -56,18 +102,14 @@ export const getProjects = async (rootPath: string) => {
     if (packagePath.endsWith("*")) {
       const packagePathWithoutWildcard = packagePath.slice(0, -1);
 
-      //console.log('packagePathWithoutWildcard', packagePathWithoutWildcard)
-
       const packageSubPaths = fs.readdirSync(
-        rootPath + packagePathWithoutWildcard
+        rootPath + "/" + packagePathWithoutWildcard
       );
       for (const packageSubPath of packageSubPaths) {
-        //console.log('packageSubPath', packageSubPath)
-
         //check if package.json exists
         const isProject = fs.existsSync(
           `${
-            rootPath + packagePathWithoutWildcard + packageSubPath
+            rootPath + "/" + packagePathWithoutWildcard + packageSubPath
           }/package.json`
         );
 
@@ -79,7 +121,7 @@ export const getProjects = async (rootPath: string) => {
         const packageJson: IPackageJson = await JSON.parse(
           fs.readFileSync(
             `${
-              rootPath + packagePathWithoutWildcard + packageSubPath
+              rootPath + "/" + packagePathWithoutWildcard + packageSubPath
             }/package.json`,
             "utf8"
           )
@@ -114,57 +156,11 @@ export const getProjects = async (rootPath: string) => {
   return projects.sort((a, b) => (a.name > b.name ? 1 : -1));
 };
 
-export const getPackages = () => {
-  if (packages.length > 0) {
-    return;
-  }
-
-  for (const project of projects) {
-    if (project.dependencies) {
-      for (const dependency of project.dependencies) {
-        const existingPackage = packages.find(
-          (p) => p.name === dependency.name
-        );
-        if (existingPackage) {
-          existingPackage.projects?.push(project.name);
-        } else {
-          packages.push({
-            name: dependency.name,
-            version: dependency.version,
-            projects: [project.name],
-          });
-        }
-      }
-    }
-    if (project.devDependencies) {
-      for (const devDependency of project.devDependencies) {
-        const existingPackage = packages.find(
-          (p) => p.name === devDependency.name
-        );
-        if (existingPackage) {
-          existingPackage.projects?.push(project.name);
-        } else {
-          packages.push({
-            name: devDependency.name,
-            version: devDependency.version,
-            projects: [project.name],
-          });
-        }
-      }
-    }
-  }
-  return packages.sort((a, b) => (a.name > b.name ? 1 : -1));
-};
-
 export const analyzeLockFile = async (rootPath: string) => {
-  if (lockedPackages.length > 0) {
-    return;
-  }
-
-  const content = fs.readFileSync(`${rootPath}yarn.lock`, "utf8");
+  const content = fs.readFileSync(`${rootPath}/yarn.lock`, "utf8");
   const parsed = parse(content);
 
-  lockedPackages = Object.keys(parsed.object)
+  const lockedPackages = Object.keys(parsed.object)
     .map((key: string) => {
       const keyParts = key.split("@");
       const [name, wantedVersion] = key.startsWith("@")
@@ -178,43 +174,16 @@ export const analyzeLockFile = async (rootPath: string) => {
       } as ILockedPackage;
     })
     .filter((p) =>
-      packages.find(
-        (p2) => p2.name === p.name && p2.version === p.wantedVersion
+      projectPackages.find(
+        (p2) =>
+          p2.packageName === p.name && p2.wantedVersion === p.wantedVersion
       )
     );
-};
-
-export const getLatestVersions = async () => {
-  if (latestVersions.length > 0) {
-    return;
+  for (const lockedPackage of lockedPackages) {
+    for (const p of projectPackages.filter(
+      (p) => p.packageName === lockedPackage.name
+    )) {
+      p.resolvedVersion = lockedPackage.resolvedVersion;
+    }
   }
-
-  for (const p of packages) {
-    const endpoint = `https://registry.npmjs.org/${p.name}/latest`;
-    const res = await fetch(endpoint);
-    const data = await res.json();
-    //console.log(data);
-    latestVersions.push({
-      name: p.name,
-      version: data.version,
-    });
-  }
-};
-
-export const appendLatestVersions = () => {
-  packages = packages.map((p) => {
-    const latestVersion = latestVersions.find((v) => v.name === p.name);
-    return {
-      ...p,
-      latestVersion: latestVersion?.version,
-    };
-  });
-
-  lockedPackages = lockedPackages.map((p) => {
-    const latestVersion = latestVersions.find((v) => v.name === p.name);
-    return {
-      ...p,
-      latestVersion: latestVersion?.version,
-    };
-  });
 };

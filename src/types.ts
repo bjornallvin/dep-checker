@@ -13,6 +13,15 @@ export interface IPackageJson {
   devDependencies?: { [key: string]: string };
 }
 
+export interface IProjectPackage {
+  packageName: string;
+  projectName: string;
+  dependencyType: "runtime" | "dev";
+  wantedVersion: string;
+  resolvedVersion: string;
+  latestVersion?: string;
+}
+
 export interface IPackage {
   name: string;
   version: string;

@@ -1,10 +1,13 @@
-This a simple app for analysizing dependencies for a monorepo.
+This a simple app for analysizing dependencies for a monorepo or single project.
 
-Point it to the repo root and it will list info on dependencies (wanted versio by projects, resolved versions from lockfile, and the latest available version from npm)
+Point it to the root where a package.json can be found and it will list info on dependencies (wanted version by projects, resolved versions from lockfile, and the latest available version from npm)
 
-Only to be run on local environment
+Only to be run on local environment in dev mode and must use port 3000
 
-Todo:
-- Make the selection of repo root path flexible
-- Colorise based on diff from latest version availble
-- Add link to npm package information
+Usage:
+```
+git clone https://github.com/bjornallvin/dep-checker.git
+cd dep-checker
+yarn dev
+```
+
