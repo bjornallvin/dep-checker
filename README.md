@@ -11,3 +11,6 @@ cd dep-checker
 yarn dev
 ```
 
+Screenshot
+
+![image](https://user-images.githubusercontent.com/2735574/228249239-30a39bc5-93fa-4842-a40f-0104dd3fff08.png)
