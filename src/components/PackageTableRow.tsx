@@ -16,6 +16,8 @@ const getColor = (a: string, b: string) => {
       return "badge badge-warning";
     case "patch":
       return "badge badge-info";
+    case "above":
+      return "text-green-500"
   }
   return "";
 };

@@ -1,7 +1,7 @@
-export const getVersionDiff = (
+export function getVersionDiff (
   currentVersion: string,
   latestVersion: string
-) => {
+)  {
   const currentVersionParts = currentVersion.split(".");
   const latestVersionParts = latestVersion.split(".");
 
@@ -16,16 +16,20 @@ export const getVersionDiff = (
 
   if (currentVersionMajor !== latestVersionMajor) {
     return "major";
+  } else if (currentVersionPatch > latestVersionPatch || currentVersionMinor > latestVersionMinor) {
+    return "above";
   } else if (currentVersionMinor !== latestVersionMinor) {
     return "minor";
   } else if (currentVersionPatch !== latestVersionPatch) {
     return "patch";
+  
   }
+
   return "same";
 };
 
 export const getLatestVersion = async (packageName: string) => {
-  const endpoint = `http://localhost:3000/api?name=${packageName}`;
+  const endpoint = `/api?name=${packageName}`;
   const res = await fetch(endpoint);
   const data = await res.json();
   return data.version;
